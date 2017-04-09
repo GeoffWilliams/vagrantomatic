@@ -12,12 +12,17 @@ RSpec.describe Vagrantomatic::Instance do
     expect(instance.configured?).to be true
   end
 
+  it "configured? reports incomplete vm correctly (missing boxs)" do
+    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_b')
+    expect(instance.configured?).to be false
+  end
+
   it "configured? reports bad vm correctly" do
     instance = Vagrantomatic::Instance.new('spec/fixtures/bad_vagrant', 'broken')
     expect(instance.configured?).to be false
   end
 
-  it "configured reports nonexistant vm correctly" do
+  it "configured? reports nonexistant vm correctly" do
     instance = Vagrantomatic::Instance.new('spec/fixtures/nothere', 'missing')
     expect(instance.configured?).to be false
   end
@@ -32,6 +37,7 @@ RSpec.describe Vagrantomatic::Instance do
     expect(instance.configured?).to be false
 
     # save and check we have a valid instance now
+    instance.config=({"box"=>"foo"})
     instance.save
     expect(instance.configured?).to be true
 
@@ -47,6 +53,7 @@ RSpec.describe Vagrantomatic::Instance do
 
   it "detects when Vagrantfile.json up to date" do
     instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
+    puts instance.configfile
     expect(instance.in_sync?).to be true
   end
 

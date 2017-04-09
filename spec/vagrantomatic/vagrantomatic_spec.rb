@@ -15,13 +15,15 @@ RSpec.describe Vagrantomatic::Vagrantomatic do
 
     expect(instances.size).to be 3
 
+    # good vm
     expect(instances.has_key?("inst_a")).to be true
     expect(instances["inst_a"].has_key?("ensure")).to be true
     expect(instances["inst_a"]["ensure"]).to eq :present
 
+    # missing a box key in vagrantfile.json
     expect(instances.has_key?("inst_b")).to be true
     expect(instances["inst_b"].has_key?("ensure")).to be true
-    expect(instances["inst_b"]["ensure"]).to eq :present
+    expect(instances["inst_b"]["ensure"]).to eq :absent
 
     # absent because no Vagrantfile.json
     expect(instances.has_key?("inst_c")).to be true

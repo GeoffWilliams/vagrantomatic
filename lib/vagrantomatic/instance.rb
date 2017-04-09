@@ -11,11 +11,17 @@ module Vagrantomatic
 
     attr_accessor :config
 
-    def initialize(vagrant_vm_dir, name, logger: nil, config:{})
+    def initialize(vagrant_vm_dir, name, logger: nil, config:nil)
       @name           = name
       @vagrant_vm_dir = vagrant_vm_dir
       @logger         = ::Vagrantomatic::Logger.new(logger).logger
-      @config         = config
+
+      # use supplied config if present, otherwise load from file
+      if config
+        @config = config
+      else
+        @config = configfile_hash
+      end
     end
 
     def vm_instance_dir
@@ -30,10 +36,10 @@ module Vagrantomatic
       File.join(vm_instance_dir, VAGRANTFILE_JSON)
     end
 
-    # return a hash of the configfile or false if error encountered
+    # return a hash of the configfile or empty hash if error encountered
     def configfile_hash
 
-      config  = false
+      config  = {}
       begin
         json    = File.read(configfile)
         config  = JSON.parse(json)
@@ -48,8 +54,7 @@ module Vagrantomatic
     def configured?
       configured = false
       if Dir.exists? (vm_instance_dir) and File.exists?(configfile) and File.exists?(vagrantfile)
-        json = File.read(configfile)
-        configured = !! configfile_hash
+        configured = configfile_hash.has_key?("box")
       end
       configured
     end
@@ -81,11 +86,11 @@ module Vagrantomatic
 
     def get_vm
       # Create an instance (represents a Vagrant **installation**)
-      instance = Derelict.instance(Vagrantomatic::Vagrantomatic::VAGRANT_DIR)
+      instance = Derelict.instance(::Vagrantomatic::Vagrantomatic::DEFAULT_VAGRANT_DIR)
       result = instance.execute('--version') # Derelict::Executer object (vagrant --version)
       if result.success?
         # vagrant present and working, connect to our vm INSTANCE
-        vm = instance.connect(@vm_instance_dir)
+        vm = instance.connect(vm_instance_dir)
       else
         raise "Error connecting to vagrant! (vagrant --version failed)"
       end
@@ -94,6 +99,8 @@ module Vagrantomatic
     end
 
     def in_sync?
+      puts @config
+      puts "***"
       configured  = false
       have_config = configfile_hash
 
@@ -122,8 +129,11 @@ module Vagrantomatic
     end
 
     def run(command)
-      # trhow the command over the wall to derelect whatever the state of instance
-      command.shift("-c")
+      # arrayify
+      command = [command]
+
+      # throw the command over the wall to derelect whatever the state of instance
+      command.unshift("-c")
       get_vm.execute(:ssh, command)
     end
 
