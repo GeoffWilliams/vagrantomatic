@@ -30,7 +30,6 @@ RSpec.describe Vagrantomatic::Instance do
   it "saves and validates a new VM" do
     # create a new vm in a temp dir
     tmpdir = Dir.mktmpdir
-    puts tmpdir
     instance = Vagrantomatic::Instance.new(tmpdir, 'newvm')
 
     # test nothing exists yet

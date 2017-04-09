@@ -99,8 +99,6 @@ module Vagrantomatic
     end
 
     def in_sync?
-      puts @config
-      puts "***"
       configured  = false
       have_config = configfile_hash
 
