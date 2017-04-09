@@ -1,0 +1,56 @@
+# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+require 'json'
+
+# Read YAML file with box details - relative to current dir
+json = File.read('Vagrantfile.json')
+config = JSON.parse(json)
+
+# for some reason it seems necessary to copy hash elements into simple variables
+# could possibly be something to do with vagrant doing strange things with loops
+# like when you can't use a for loop or maybe something to do with ruby variables
+# going out of scope in blocks and simple ones needing to be passed... But why
+# does everyone else's examples work?  Perhaps vagrant changed recently
+config_box        = config["box"]
+config_name       = config["name"]
+config_ip         = config["ip"]
+config_memory     = config["memory"]
+config_cpu        = config["cpu"]
+config_provision  = config["provision"]
+
+# Create boxes
+Vagrant.configure("2") do |config|
+
+  # One VM per config file
+  config.vm.box       = config_box
+  config.vm.hostname  = config_name
+  if config_ip
+    config.vm.network "private_network", ip: config_ip
+  end
+  config.vm.provider "virtualbox" do |vb|
+    if config_memory
+      vb.memory = config_memory
+    end
+    if config_cpu
+      vb.cpus = config_cpu
+    end
+  end
+
+  # srv.vm.synced_folder "./", "/home/vagrant/#{servers['name']}"
+  if config_provision
+    config.vm.provision "shell", inline: config_provision
+  end
+  # servers["shell_commands"].each do |sh|
+  #   srv.vm.provision "shell", inline: sh["shell"]
+  # end
+
+  # srv.vm.provision :puppet do |puppet|
+  #     puppet.temp_dir = "/tmp"
+  #     puppet.options = ['--modulepath=/tmp/modules', '--verbose']
+  #     puppet.hiera_config_path = "hiera.yaml"
+  #
+  #     end
+  #   end
+  # end
+
+end
