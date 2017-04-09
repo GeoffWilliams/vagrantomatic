@@ -1,7 +1,3 @@
-# require "json"
-# require "vagrantomatic/vagrantfile"
-# require "vagrantomatic/logger"
-#
 require "derelict"
 require "fileutils"
 require "json"
@@ -123,6 +119,12 @@ module Vagrantomatic
 
     def reload
       set_vm.execute(:reload)
+    end
+
+    def run(command)
+      # trhow the command over the wall to derelect whatever the state of instance
+      command.shift("-c")
+      get_vm.execute(:ssh, command)
     end
 
    end

@@ -1,5 +1,4 @@
 require "vagrantomatic/version"
-require "vagrantomatic/vagrantfile"
 require "vagrantomatic/logger"
 require "vagrantomatic/instance"
 require "json"
@@ -34,7 +33,7 @@ module Vagrantomatic
 
     # Return a has of instances
     def instances_metadata()
-      instance_wildcard = File.join(@vagrant_vm_dir, "*", ::Vagrantomatic::Vagrantfile::VAGRANTFILE)
+      instance_wildcard = File.join(@vagrant_vm_dir, "*", ::Vagrantomatic::Instance::VAGRANTFILE)
       instances = {}
       Dir.glob(instance_wildcard).each { |f|
         elements = f.split(File::SEPARATOR)
