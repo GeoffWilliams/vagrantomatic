@@ -36,12 +36,15 @@ module Vagrantomatic
 
     # return a hash of the configfile or false if error encountered
     def configfile_hash
-      json    = File.read(configfile)
+
       config  = false
       begin
-        config = JSON.parse(json)
+        json    = File.read(configfile)
+        config  = JSON.parse(json)
+      rescue Errno::ENOENT
+        @logger.error("#{configfile} does not exist")
       rescue JSON::ParserError
-        @logger.error("JSON::ParserError encountered in #{configfile}, marking instance absent")
+        @logger.error("JSON parser error in #{configfile}")
       end
       config
     end
@@ -64,8 +67,10 @@ module Vagrantomatic
     # Vagrant to be driven from a .json config file, all
     # the parameters are externalised here
     def ensure_config
-      File.open(configfile,"w") do |f|
-        f.write(@config.to_json)
+      if ! in_sync?
+        File.open(configfile,"w") do |f|
+          f.write(@config.to_json)
+        end
       end
     end
 
