@@ -18,27 +18,17 @@ module Vagrantomatic
     # type and provider, or you can use the returned info for whatever you like
     def instance_metadata(name)
       instance = ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name)
-      # instance_dir = File.join(@vagrant_vm_dir, instance_name)
-      # config_file = File.join(instance_dir, ::Vagrantomatic::Vagrantfile::VAGRANTFILE_JSON)
       config = {}
-      configfile = instance.configfile
-      if File.exists?(instance.configfile)
-
-        # json validity test
-        json = File.read(configfile)
-        begin
-          config = JSON.parse(json)
-          config["ensure"] = :present
-        rescue JSON::ParserError
-          @logger.error("JSON::ParserError encountered in #{instance.configfile}, marking instance absent")
-          config["ensure"] = :absent
-        end
+      # annotate the raw config hash with data for puppet (and humans...)
+      if instance.configured?
+        config = instance.configfile_hash
+        config["ensure"] = :present
       else
         # VM missing or damaged
         config["ensure"] = :absent
-
       end
       config["name"] = name
+
       config
     end
 

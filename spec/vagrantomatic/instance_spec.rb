@@ -36,7 +36,18 @@ RSpec.describe Vagrantomatic::Instance do
     expect(instance.configured?).to be true
 
     # cleanup
-    #FileUtils.rm_rf(tmpdir)
+    FileUtils.rm_rf(tmpdir)
+  end
+
+  it "detects when Vagrantfile.json needs saving" do
+    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
+    instance.config=({'cpus' => 6})
+    expect(instance.in_sync?).to be false
+  end
+
+  it "detects when Vagrantfile.json up to date" do
+    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
+    expect(instance.in_sync?).to be true
   end
 
 end

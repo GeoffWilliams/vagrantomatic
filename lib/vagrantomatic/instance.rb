@@ -34,16 +34,23 @@ module Vagrantomatic
       File.join(vm_instance_dir, VAGRANTFILE_JSON)
     end
 
+    # return a hash of the configfile or false if error encountered
+    def configfile_hash
+      json    = File.read(configfile)
+      config  = false
+      begin
+        config = JSON.parse(json)
+      rescue JSON::ParserError
+        @logger.error("JSON::ParserError encountered in #{configfile}, marking instance absent")
+      end
+      config
+    end
+
     def configured?
       configured = false
       if Dir.exists? (vm_instance_dir) and File.exists?(configfile) and File.exists?(vagrantfile)
         json = File.read(configfile)
-        begin
-          config = JSON.parse(json)
-          configured  = true
-        rescue JSON::ParserError
-          @logger.error("JSON::ParserError encountered in #{configfile}, marking instance absent")
-        end
+        configured = !! configfile_hash
       end
       configured
     end
@@ -85,6 +92,16 @@ module Vagrantomatic
       vm
     end
 
+    def in_sync?
+      configured  = false
+      have_config = configfile_hash
+
+      if have_config == @config
+        configured = true
+      end
+
+      configured
+    end
 
     def start
       get_vm.execute(:up).success?
