@@ -9,9 +9,6 @@ module Vagrantomatic
     DEFAULT_VAGRANT_DIR     = "/usr"
     DEFAULT_VAGRANT_VM_DIR  = "/var/lib/vagrantomatic"
 
-    attr_reader :vagrant_vm_dir
-    attr_reader :logger
-
     def initialize(vagrant_vm_dir: nil, logger: nil)
       @vagrant_vm_dir = vagrant_vm_dir || DEFAULT_VAGRANT_VM_DIR
       @logger = ::Vagrantomatic::Logger.new(logger).logger
@@ -19,19 +16,21 @@ module Vagrantomatic
 
     # Return a has representing the named instance.  This is suitable for Puppet
     # type and provider, or you can use the returned info for whatever you like
-    def instance_metadata(instance_name)
-      instance_dir = File.join(@vagrant_vm_dir, instance_name)
-      config_file = File.join(instance_dir, ::Vagrantomatic::Vagrantfile::VAGRANTFILE_JSON)
+    def instance_metadata(name)
+      instance = ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name)
+      # instance_dir = File.join(@vagrant_vm_dir, instance_name)
+      # config_file = File.join(instance_dir, ::Vagrantomatic::Vagrantfile::VAGRANTFILE_JSON)
       config = {}
-      if File.exists?(config_file)
+      configfile = instance.configfile
+      if File.exists?(instance.configfile)
 
         # json validity test
-        json = File.read(config_file)
+        json = File.read(configfile)
         begin
           config = JSON.parse(json)
           config["ensure"] = :present
         rescue JSON::ParserError
-          @logger.error("JSON::ParserError encountered in #{config_file}, marking instance absent")
+          @logger.error("JSON::ParserError encountered in #{instance.configfile}, marking instance absent")
           config["ensure"] = :absent
         end
       else
@@ -39,7 +38,7 @@ module Vagrantomatic
         config["ensure"] = :absent
 
       end
-      config["name"] = instance_name
+      config["name"] = name
       config
     end
 
@@ -60,7 +59,7 @@ module Vagrantomatic
     end
 
     def instance(name)
-      ::Vagrantomatic::Instance.new(vagrant_vm_dir: @vagrant_vm_dir, name: name)
+      ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name)
     end
 
   end

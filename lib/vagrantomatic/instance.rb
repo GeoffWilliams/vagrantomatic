@@ -4,18 +4,26 @@
 #
 require "derelict"
 require "fileutils"
+require "json"
 module Vagrantomatic
   class Instance
-    VAGRANTFILE       = "Vagrantfile"
-    VAGRANTFILE_JSON  = "#{VAGRANTFILE}.json"
+    VAGRANTFILE         = "Vagrantfile"
+    VAGRANTFILE_JSON    = "#{VAGRANTFILE}.json"
+    # We ship our own Vagrantfile with all variables externalised inside this
+    # gem and get it into position by symlinking B-)
+    MASTER_VAGRANTFILE  = File.join(File.dirname(File.expand_path(__FILE__)), "../../res/#{VAGRANTFILE}")
 
-    def initialize(name:, vagrant_vm_dir:)
-      @name            = name
-      @vagrant_vm_dir  = vagrant_vm_dir
+    attr_accessor :config
+
+    def initialize(vagrant_vm_dir, name, logger: nil, config:{})
+      @name           = name
+      @vagrant_vm_dir = vagrant_vm_dir
+      @logger         = ::Vagrantomatic::Logger.new(logger).logger
+      @config         = config
     end
 
     def vm_instance_dir
-      File.join(@vagrant_vm_dir, @config["name"])
+      File.join(@vagrant_vm_dir, @name)
     end
 
     def vagrantfile
@@ -28,16 +36,38 @@ module Vagrantomatic
 
     def configured?
       configured = false
-      if Dir.exists? (@vm_instance_dir) and File.exists?(configfile) and File.exists?(vagrantfile)
-
-        json        = File.read(configfile)
-        have_config = JSON.parse(json)
-
-        if have_config == @config
-          configured = true
+      if Dir.exists? (vm_instance_dir) and File.exists?(configfile) and File.exists?(vagrantfile)
+        json = File.read(configfile)
+        begin
+          config = JSON.parse(json)
+          configured  = true
+        rescue JSON::ParserError
+          @logger.error("JSON::ParserError encountered in #{configfile}, marking instance absent")
         end
       end
       configured
+    end
+
+    def save
+      FileUtils.mkdir_p(vm_instance_dir)
+      ensure_config
+      ensure_vagrantfile
+    end
+
+    # Vagrant to be driven from a .json config file, all
+    # the parameters are externalised here
+    def ensure_config
+      File.open(configfile,"w") do |f|
+        f.write(@config.to_json)
+      end
+    end
+
+    # The Vagrantfile itself is shipped as part of this
+    # module and delivered via pluginsync, so we just need
+    # to symlink it for each directory.  This gives us the
+    # benefit being to update by dropping a new module too
+    def ensure_vagrantfile
+      FileUtils.ln_sf(MASTER_VAGRANTFILE, vagrantfile)
     end
 
 
