@@ -17,6 +17,7 @@ config_ip         = config["ip"]
 config_memory     = config["memory"]
 config_cpu        = config["cpu"]
 config_provision  = config["provision"]
+config_folders    = config["folders"] ? Array(config["folders"]) : false
 
 # Create boxes
 Vagrant.configure("2") do |config|
@@ -36,7 +37,12 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  # srv.vm.synced_folder "./", "/home/vagrant/#{servers['name']}"
+  if config_folders
+    config_folders.each do |folder|
+      folder_split = folder.split(':')
+      config.vm.synced_folder folder_split[0], folder_split[1]
+    end
+  end
   if config_provision
     config.vm.provision "shell", inline: config_provision
   end

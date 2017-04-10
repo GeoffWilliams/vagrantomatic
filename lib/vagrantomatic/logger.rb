@@ -9,6 +9,9 @@ module Vagrantomatic
         @logger = logger
       else
         @logger = ::Logger.new(STDOUT)
+        @logger.formatter = proc do |severity, datetime, progname, msg|
+          "#{severity}: #{msg}"
+        end
       end
     end
 

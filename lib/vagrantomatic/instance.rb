@@ -22,6 +22,7 @@ module Vagrantomatic
       else
         @config = configfile_hash
       end
+      @logger.debug "initialized vagrantomatic instance for #{name}"
     end
 
     def vm_instance_dir
@@ -44,7 +45,7 @@ module Vagrantomatic
         json    = File.read(configfile)
         config  = JSON.parse(json)
       rescue Errno::ENOENT
-        @logger.error("#{configfile} does not exist")
+        @logger.debug("#{configfile} does not exist")
       rescue JSON::ParserError
         @logger.error("JSON parser error in #{configfile}")
       end
@@ -60,6 +61,7 @@ module Vagrantomatic
     end
 
     def save
+      @logger.debug("saving vm settings...")
       FileUtils.mkdir_p(vm_instance_dir)
       ensure_config
       ensure_vagrantfile
@@ -98,6 +100,13 @@ module Vagrantomatic
       vm
     end
 
+    def execute_and_log(op)
+      get_vm.execute(op) { |stdout, stderr|
+        # only one of these will ever be set at a time, other one is nil
+        @logger.debug "#{stdout}#{stderr}"
+      }.success?
+    end
+
     def in_sync?
       configured  = false
       have_config = configfile_hash
@@ -110,20 +119,22 @@ module Vagrantomatic
     end
 
     def start
-      get_vm.execute(:up).success?
+      execute_and_log(:up)
     end
 
     def stop
-      get_vm.execute(:suspend).success?
+      execute_and_log(:suspend)
     end
 
     def purge
-      get_vm.execute(:destroy)
-      FileUtils::rm_rf(@vm_instance_dir)
+      execute_and_log(:destroy)
+      if Dir.exists? vm_instance_dir
+        FileUtils::rm_rf(vm_instance_dir)
+      end
     end
 
     def reload
-      set_vm.execute(:reload)
+      execute_and_log(:reload)
     end
 
     def run(command)
@@ -132,7 +143,13 @@ module Vagrantomatic
 
       # throw the command over the wall to derelect whatever the state of instance
       command.unshift("-c")
-      get_vm.execute(:ssh, command)
+      messages = []
+      vm = get_vm
+      executor = vm.execute(:ssh, command) { |stdout,stderr|
+        @logger.debug "#{stdout}#{stderr}"
+        messages << stdout << stderr
+      }
+      { :status => executor.status, :messages => messages}
     end
 
    end
