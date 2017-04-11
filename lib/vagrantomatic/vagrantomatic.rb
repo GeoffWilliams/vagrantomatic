@@ -48,7 +48,7 @@ module Vagrantomatic
     end
 
     def instance(name)
-      ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name)
+      ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name, logger: @logger)
     end
 
   end

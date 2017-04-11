@@ -140,16 +140,19 @@ module Vagrantomatic
     def run(command)
       # arrayify
       command = [command]
-
-      # throw the command over the wall to derelect whatever the state of instance
       command.unshift("-c")
+
       messages = []
       vm = get_vm
+      # throw the command over the wall to derelect whatever the state of instance
+      # for now just support ssh - for windows we could do `powershell -c` or
+      # maybe even winRM
       executor = vm.execute(:ssh, command) { |stdout,stderr|
-        @logger.debug "#{stdout}#{stderr}"
-        messages << stdout << stderr
+        @logger.debug "#{stdout}#{stderr}".strip
+        messages << "#{stdout}#{stderr}".strip
       }
-      { :status => executor.status, :messages => messages}
+      @logger.info("command '#{command}' resulted in #{messages.size} lines")
+      return executor.status, messages
     end
 
    end
