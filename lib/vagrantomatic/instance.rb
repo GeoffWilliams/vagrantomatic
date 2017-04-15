@@ -137,6 +137,11 @@ module Vagrantomatic
       execute_and_log(:reload)
     end
 
+    def reset
+      execute_and_log(:destroy)
+      execute_and_log(:up)
+    end
+
     def run(command)
       # arrayify
       command = [command]

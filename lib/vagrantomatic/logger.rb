@@ -10,7 +10,11 @@ module Vagrantomatic
       else
         @logger = ::Logger.new(STDOUT)
         @logger.formatter = proc do |severity, datetime, progname, msg|
-          "#{severity}: #{msg}"
+          # depending on the source, some messages come in with new lines and
+          # some do not so strip off any exiting and then add our own for
+          # consistency
+          msg = msg.strip
+          "#{severity}: #{msg}\n"
         end
       end
     end
