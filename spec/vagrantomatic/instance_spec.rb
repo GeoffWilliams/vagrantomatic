@@ -93,13 +93,15 @@ RSpec.describe Vagrantomatic::Instance do
   end
 
   it "expands relative shared folder paths correctly" do
-    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a', config: CONFIG_SHARED_REL)
+    instance = Vagrantomatic::Instance.new(
+      'spec/fixtures/vagrant', 'inst_a', config: CONFIG_SHARED_REL)
     expect(instance.config["folders"][0].start_with?(Dir.pwd)).to be true
   end
 
 
   it "does not expands absoluted shared folder paths" do
-    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a', config: CONFIG_SHARED_ABS)
+    instance = Vagrantomatic::Instance.new(
+      'spec/fixtures/vagrant', 'inst_a', config: CONFIG_SHARED_ABS)
     expect(instance.config["folders"][0].start_with?(Dir.pwd)).to be false
   end
 
