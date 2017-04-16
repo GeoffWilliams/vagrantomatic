@@ -103,7 +103,7 @@ module Vagrantomatic
     def execute_and_log(op)
       get_vm.execute(op) { |stdout, stderr|
         # only one of these will ever be set at a time, other one is nil
-        @logger.debug "#{stdout}#{stderr}"
+        @logger.debug "#{stdout}#{stderr}".strip
       }.success?
     end
 
@@ -153,8 +153,9 @@ module Vagrantomatic
       # for now just support ssh - for windows we could do `powershell -c` or
       # maybe even winRM
       executor = vm.execute(:ssh, command) { |stdout,stderr|
-        @logger.debug "#{stdout}#{stderr}".strip
-        messages << "#{stdout}#{stderr}".strip
+        line = "#{stdout}#{stderr}".strip
+        @logger.debug line
+        messages << line
       }
       @logger.info("command '#{command}' resulted in #{messages.size} lines")
       return executor.status, messages

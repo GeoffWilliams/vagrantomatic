@@ -24,5 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.0"
 
   # https://github.com/bradfeehan/derelict/issues/16
-  # spec.add_dependency "derelict", "0.6.2"
+  spec.add_dependency "derelict_m", "0.6.2a"
 end
