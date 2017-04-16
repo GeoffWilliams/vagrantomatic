@@ -9,7 +9,17 @@ module Vagrantomatic
     # gem and get it into position by symlinking B-)
     MASTER_VAGRANTFILE  = File.join(File.dirname(File.expand_path(__FILE__)), "../../res/#{VAGRANTFILE}")
 
-    attr_accessor :config
+    def config
+      @config
+    end
+
+    # ruby convention is to use `config=` but this doesn't work properly inside
+    # a constructor, it declarates a local variable `config`.  Calling from
+    # outside the constructor works fine...
+    def set_config(config)
+      @config = config
+      validate_config
+    end
 
     def validate_config(fatal = true)
       valid = true
@@ -23,27 +33,36 @@ module Vagrantomatic
       valid
     end
 
-
-    def fix_folders()
+    # Add a new folder to @config in the correct place.  Folders must be
+    # specified as colon delimited strings: `HOST_PATH:VM_PATH`, eg
+    # `/home/geoff:/stuff` would mount `/home/geoff` from the main computer and
+    # would mount it inside the VM at /stuff.  Vagrant expects the `HOST_PATH`
+    # to be an absolute path, however, you may specify a relative path here and
+    # vagrantomatic will attempt to extract a fully qualified path by prepending
+    # the present working directory.  If this is incorrect its up to the
+    # programmer to fix this by passing in a fully qualified path in the first
+    # place
+    def add_shared_folder(folders)
+      folders=Array(folders)
       # can't use dig() might not be ruby 2.3
-      if @config.has_key?("folders")
-        @config["folders"] = Array(@config["folders"])
-
-        # all paths must be fully qualified.  If we were asked to do a relative path, change
-        # it to the current directory since that's probably what the user wanted.  Not right?
-        # user supply correct path!
-        @config["folders"] = @config["folders"].map { |folder|
-          if ! folder.start_with? '/'
-            folder = "#{Dir.pwd}/#{folder}"
-          end
-          folder
-        }
-      else
+      if ! @config.has_key?("folders")
         @config["folders"] = []
       end
+
+
+      # all paths must be fully qualified.  If we were asked to do a relative path, change
+      # it to the current directory since that's probably what the user wanted.  Not right?
+      # user supply correct path!
+      folders.each { |folder|
+        if ! folder.start_with? '/'
+          folder = "#{Dir.pwd}/#{folder}"
+        end
+
+        @config["folders"] << folder
+      }
     end
 
-    def initialize(vagrant_vm_dir, name, logger: nil, config:nil)
+    def initialize(vagrant_vm_dir, name, logger:nil, config:nil)
       @name           = name
       @vagrant_vm_dir = vagrant_vm_dir
       @logger         = Logger.new(logger).logger
@@ -57,23 +76,18 @@ module Vagrantomatic
 
       # use supplied config if present, otherwise load from file
       if config
-        @config = config
-
         # validate a user-supplied config now, at the point of insertion
         # by this point we have a config either from file or supplied by user it
         # must be valid for us to proceed!
-        @logger.debug "validating config for #{name}"
-        validate_config
-
-        # user may have specified relative folders at time of creation - if so
-        # we must now expand all paths in them and write them forever to config
-        # file
-        fix_folders
+        set_config(config)
       else
-        @config = configfile_hash
 
         # this passed-in config could still be bad - we will validate it before
-        # use on either save() or get_vm()
+        # use on either save() or get_vm().  We DONT validate it right away
+        # because this would cause the constructor to explode when we are trying
+        # to introspec intances - we would never be able to fix anything
+        # automatically
+        @config = configfile_hash
       end
 
       @logger.debug "initialized vagrantomatic instance for #{name}"
@@ -144,6 +158,8 @@ module Vagrantomatic
       FileUtils.mkdir_p(vm_instance_dir)
       ensure_config
       ensure_vagrantfile
+
+      @force_save = false
     end
 
     # Vagrant to be driven from a .json config file, all
@@ -168,7 +184,7 @@ module Vagrantomatic
     def get_vm
       # Create an instance (represents a Vagrant **installation**)
       if ! in_sync?
-        raise "get_vm called for instance but it is not in_sync! (call save() first?)"
+        raise "get_vm called for instance #{@name}but it is not in_sync! (call save() first?)"
       end
 
       validate_config
@@ -195,7 +211,6 @@ module Vagrantomatic
     def in_sync?
       configured  = false
       have_config = configfile_hash
-
       if (! @force_save) and (have_config == @config )
         configured = true
       end
@@ -242,7 +257,7 @@ module Vagrantomatic
         @logger.debug line
         messages << line
       }
-      @logger.info("command '#{command}' resulted in #{messages.size} lines")
+      @logger.info("command '#{command}' resulted in #{messages.size} lines (exit status: #{executor.status})")
       return executor.status, messages
     end
 

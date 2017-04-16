@@ -10,6 +10,7 @@ module Vagrantomatic
 
     def initialize(vagrant_vm_dir: nil, logger: nil)
       @vagrant_vm_dir = vagrant_vm_dir || DEFAULT_VAGRANT_VM_DIR
+      FileUtils.mkdir_p(@vagrant_vm_dir)
       @logger = Logger.new(logger).logger
     end
 
@@ -47,8 +48,8 @@ module Vagrantomatic
       instances
     end
 
-    def instance(name)
-      Instance.new(@vagrant_vm_dir, name, logger: @logger)
+    def instance(name,logger:nil, config:nil)
+      Instance.new(@vagrant_vm_dir, name, logger: @logger, config:config)
     end
 
   end

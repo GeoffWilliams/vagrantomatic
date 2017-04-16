@@ -83,7 +83,7 @@ RSpec.describe Vagrantomatic::Instance do
 
   it "detects when Vagrantfile.json needs saving" do
     instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
-    instance.config=({'cpus' => 6})
+    instance.set_config({"box" => "foo", 'cpus' => 6})
     expect(instance.in_sync?).to be false
   end
 
@@ -93,16 +93,33 @@ RSpec.describe Vagrantomatic::Instance do
   end
 
   it "expands relative shared folder paths correctly" do
-    instance = Vagrantomatic::Instance.new(
-      'spec/fixtures/vagrant', 'inst_a', config: CONFIG_SHARED_REL)
+    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
+    instance.add_shared_folder('foo:/foo')
     expect(instance.config["folders"][0].start_with?(Dir.pwd)).to be true
   end
 
 
   it "does not expands absoluted shared folder paths" do
-    instance = Vagrantomatic::Instance.new(
-      'spec/fixtures/vagrant', 'inst_a', config: CONFIG_SHARED_ABS)
+    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
+    instance.add_shared_folder('/foo:/foo')
     expect(instance.config["folders"][0].start_with?(Dir.pwd)).to be false
+  end
+
+  it "detects Vagrantfile.json needs updating after adding a shared folder" do
+    instance = Vagrantomatic::Instance.new('spec/fixtures/vagrant', 'inst_a')
+    expect(instance.in_sync?).to be true
+    instance.add_shared_folder('/foo:/bar')
+    expect(instance.in_sync?).to be false
+  end
+
+  it "in_sync? works correctly after fixing blank/corrupt JSON (clears @force_save)" do
+    tmpdir = Dir.mktmpdir
+    instance = Vagrantomatic::Instance.new(tmpdir, 'new_instance')
+    expect(instance.in_sync?).to be false
+    instance.set_config(CONFIG_GOOD)
+    instance.save
+    expect(instance.in_sync?).to be true
+    FileUtils.rm_rf(tmpdir)
   end
 
 end
