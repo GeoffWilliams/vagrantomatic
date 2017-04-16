@@ -201,8 +201,8 @@ module Vagrantomatic
       vm
     end
 
-    def execute_and_log(op)
-      get_vm.execute(op) { |stdout, stderr|
+    def execute_and_log(op, *args)
+      get_vm.execute(op, args) { |stdout, stderr|
         # only one of these will ever be set at a time, other one is nil
         @logger.debug "#{stdout}#{stderr}".strip
       }.success?
@@ -227,7 +227,7 @@ module Vagrantomatic
     end
 
     def purge
-      execute_and_log(:destroy)
+      execute_and_log(:destroy, '-f')
       if Dir.exists? vm_instance_dir
         FileUtils::rm_rf(vm_instance_dir)
       end
