@@ -10,13 +10,13 @@ module Vagrantomatic
 
     def initialize(vagrant_vm_dir: nil, logger: nil)
       @vagrant_vm_dir = vagrant_vm_dir || DEFAULT_VAGRANT_VM_DIR
-      @logger = ::Vagrantomatic::Logger.new(logger).logger
+      @logger = Logger.new(logger).logger
     end
 
     # Return a has representing the named instance.  This is suitable for Puppet
     # type and provider, or you can use the returned info for whatever you like
     def instance_metadata(name)
-      instance = ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name)
+      instance = instance(name)
       config = {}
       # annotate the raw config hash with data for puppet (and humans...)
       if instance.configured?
@@ -31,7 +31,7 @@ module Vagrantomatic
       config
     end
 
-    # Return a has of instances
+    # Return a hash of all instances
     def instances_metadata()
       instance_wildcard = File.join(@vagrant_vm_dir, "*", ::Vagrantomatic::Instance::VAGRANTFILE)
       instances = {}
@@ -48,7 +48,7 @@ module Vagrantomatic
     end
 
     def instance(name)
-      ::Vagrantomatic::Instance.new(@vagrant_vm_dir, name, logger: @logger)
+      Instance.new(@vagrant_vm_dir, name, logger: @logger)
     end
 
   end
