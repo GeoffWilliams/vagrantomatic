@@ -238,7 +238,7 @@ module Vagrantomatic
     end
 
     def reset
-      execute_and_log(:destroy)
+      execute_and_log(:destroy, '-f')
       execute_and_log(:up)
     end
 
