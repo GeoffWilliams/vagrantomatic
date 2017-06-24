@@ -9,8 +9,16 @@ module Vagrantomatic
     # gem and get it into position by symlinking B-)
     MASTER_VAGRANTFILE  = File.join(File.dirname(File.expand_path(__FILE__)), "../../res/#{VAGRANTFILE}")
 
+
+    CMD_DEFAULT = "sudo -i"
+    CMD_WINDOWS = "cmd /c"
+
     def config
       @config
+    end
+
+    def windows
+      @windows
     end
 
     # ruby convention is to use `config=` but this doesn't work properly inside
@@ -66,6 +74,11 @@ module Vagrantomatic
       @name           = name
       @vagrant_vm_dir = vagrant_vm_dir
       @logger         = Logger.new(logger).logger
+
+      # (attempt) to auto-detect windows based on the VM name containing 'win'
+      # allow users to override this with config[windows]=true
+      @windows = ((/win/i === @name)  or (@config.has_key?('windows') and config['windows'] == true))
+
 
       # if we encounter conditions such as missing or damaged files we may need
       # to force a save that would normally not be detected - eg if we load bad
@@ -184,7 +197,7 @@ module Vagrantomatic
     def get_vm
       # Create an instance (represents a Vagrant **installation**)
       if ! in_sync?
-        raise "get_vm called for instance #{@name}but it is not in_sync! (call save() first?)"
+        raise "get_vm called for instance #{@name} but it is not in_sync! (call save() first?)"
       end
 
       validate_config
@@ -243,16 +256,16 @@ module Vagrantomatic
     end
 
     def run(command)
-      # arrayify
-      command = [command]
+      # arrayify and wrap with correct command for windows vs linux
+      command = ["#{@windows ? CMD_WINDOWS : CMD_DEFAULT} #{command}"]
       command.unshift("-c")
 
       messages = []
       vm = get_vm
       # throw the command over the wall to derelect whatever the state of instance
-      # for now just support ssh - for windows we could do `powershell -c` or
-      # maybe even winRM
-      executor = vm.execute(:ssh, command) { |stdout,stderr|
+      # using the appropriate subcommand
+      runner = @windows ? :winrm : :ssh
+      executor = vm.execute(runner, command) { |stdout,stderr|
         line = "#{stdout}#{stderr}".strip
         @logger.debug line
         messages << line
@@ -261,5 +274,5 @@ module Vagrantomatic
       return executor.status, messages
     end
 
-   end
- end
+  end
+end
